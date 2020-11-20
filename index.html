@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>PETA WEBGIS</title>
+	<link rel="stylesheet" href="leaflet/leaflet.css" />
+	<script src="leaflet/leaflet.js"></script>
+	<link rel="stylesheet" href="LeafletMarker/css/leaflet.extra-markers.min.css">
+    <script src="LeafletMarker/js/leaflet.extra-markers.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="http://code.jquery.com/jquery-2.1.0.min.js"></script>
+    <style type="text/css">
+    	#map {
+			height : 650px; 
+		}
+		body {
+			margin: 0px auto;
+		}
+		.header {
+		  padding: 10px;
+		  text-align: center;
+		  background: #8a3841;
+		  color: white;
+		  font-size: 30px;
+		}
+		td {
+			text-align : center;
+			font-size: 20px;
+			padding: 8px;
+		}
+		th {
+			font-size: 23px;
+			background-color: blue;
+			color : white;
+			padding: 8px;
+			text-align : center;
+		}
+		.infolegend {
+			font-size : 17px;
+			background-color: #e3d5af;
+			padding: 15px;
+			border-radius: 5px;
+			box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+		}
+		.circle {
+		  padding-top: 2px;
+		  width: 32px;
+		  height: 32px;
+		  border-radius: 50%;
+		  font-size: 14px;
+		  font-weight: bold;
+		  color: #fff;
+		  line-height: 25px;
+		  text-align: center;
+		  display: inline-block;
+		  margin-bottom: 5px;
+		}
+    </style>
+</head>
+<body>
+	<div class="header">
+	  <h1>Peta COVID-19</h1>
+	  <p>Provinsi di Indonesia</p>
+	</div>
+	<div class="content">
+	<div id="map"></div>
+	</div>
+</body>
+<script type="text/javascript">
+	var redMarker, greenMarker, blackMarker, yellowMarker;
+	var map = L.map('map', {
+              center: [-2.4058653,117.5021489],
+              zoom:5,
+              minZoom : 4
+            });
+	L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+	}).addTo(map);
+	var proxyUrl = 'https://cors-anywhere.herokuapp.com/',
+		targetUrl = 'https://api.kawalcorona.com/indonesia/provinsi/';
+	function readTextFile(file, callback) {
+		    var rawFile = new XMLHttpRequest();
+		    rawFile.overrideMimeType("application/json");
+		    rawFile.open("GET", file, true);
+		    rawFile.onreadystatechange = function() {
+		        if (rawFile.readyState === 4 && rawFile.status == "200") {
+		            callback(rawFile.responseText);
+		        }
+		    }
+		    rawFile.send(null);
+		}
+	fetch(proxyUrl+targetUrl, {
+		  method: 'GET', // or 'PUT'
+		  headers: {
+		     'Content-Type': 'application/json',
+		  }
+		}).then(
+		        function(u){ return u.json();}
+		      ).then(
+		        function(json){
+		        	readTextFile("province.geojson", function(text){
+					    geojsondata = JSON.parse(text);
+					    for (i=0;i<=33;i++) {
+							for (j=0;j<=33;j++) {
+							      if(geojsondata['features'][i]['properties']['Kode_Provi']==json[j]['attributes']['Kode_Provi']){
+							      	geojsondata['features'][i]['properties']['Kasus_Positif'] = json[j]['attributes']['Kasus_Posi'];
+							      	geojsondata['features'][i]['properties']['Kasus_Sembuh'] = json[j]['attributes']['Kasus_Semb'];
+							      	geojsondata['features'][i]['properties']['Kasus_Meninggal'] = json[j]['attributes']['Kasus_Meni'];
+							    	} else {}
+									}
+							}
+							L.geoJson(geojsondata, {
+								pointToLayer: function (feature, latlng) {
+								 redMarker = L.ExtraMarkers.icon({
+								    icon: 'fa-number',
+						            number: feature.properties.Kasus_Positif,
+						            markerColor: 'red',
+						            shape: 'square',
+						            prefix: 'fa',
+						            tooltipAnchor: [15, -25]
+								  });
+								  yellowMarker = L.ExtraMarkers.icon({
+								    icon: 'fa-number',
+						            number: feature.properties.Kasus_Positif,
+						            markerColor: 'yellow',
+						            shape: 'square',
+						            prefix: 'fa',
+						            tooltipAnchor: [15, -25]
+								  });
+								  greenMarker = L.ExtraMarkers.icon({
+								    icon: 'fa-number',
+						            number: feature.properties.Kasus_Positif,
+						            markerColor: 'green',
+						            shape: 'square',
+						            prefix: 'fa',
+						            tooltipAnchor: [15, -25]
+								  });
+								  blackMarker = L.ExtraMarkers.icon({
+								    icon: 'fa-number',
+						            number: feature.properties.Kasus_Positif,
+						            markerColor: 'black',
+						            shape: 'square',
+						            prefix: 'fa',
+						            tooltipAnchor: [15, -25]
+								  });
+								  if(feature.properties.Kasus_Positif>=0&&feature.properties.Kasus_Positif<100)
+								  		mark=L.marker(latlng, {icon: greenMarker});
+								  else if(feature.properties.Kasus_Positif>=100&&feature.properties.Kasus_Positif<300)
+								  		mark=L.marker(latlng, {icon: yellowMarker});
+								  else if(feature.properties.Kasus_Positif>=300&&feature.properties.Kasus_Positif<=1000)
+								  		mark=L.marker(latlng, {icon: redMarker});
+								  else if(feature.properties.Kasus_Positif>1000)
+								  		mark=L.marker(latlng, {icon: blackMarker});
+								  	return mark;
+								},
+								updateFeature: function(f, oldLayer) {
+									var c = f.geometry.coordinates;
+                                    oldLayer.setLatLng([c[1], c[0]]);
+								    if (!oldLayer){ return; }
+								    if(feature.properties.Kasus_Positif>=0&&feature.properties.Kasus_Positif<100)
+								  		oldLayer.setIcon(greenMarker);
+									else if(feature.properties.Kasus_Positif>=100&&feature.properties.Kasus_Positif<300)
+									  		oldLayer.setIcon(yellowMarker);
+									else if(feature.properties.Kasus_Positif>=300&&feature.properties.Kasus_Positif<=1000)
+									  		oldLayer.setIcon(redMarker);
+									else if(feature.properties.Kasus_Positif>1000)
+											oldLayer.setIcon(blackMarker);
+								  	return oldLayer;
+								},
+								onEachFeature: function (feature, layer) {
+									layer.on({
+							            click: function (e) {
+							              layer.bindPopup(
+							              	`<table border="1px">
+							              	<tr>
+							              	<th colspan=2>Provinsi ${feature.properties.PROV}</th>
+							              	</tr>
+							              	<tr>
+							              	<td style="text-align : left;">
+							              	<i class="fa fa-ambulance"></i> Positif </td>
+							              	<td> ${feature.properties.Kasus_Positif}
+							              	</td>
+							              	</tr>
+							              	<tr>
+							              	<td style="text-align : left;">
+							              	<i class="fa fa-heart-o"></i> Meninggal </td>
+							              	<td> ${feature.properties.Kasus_Meninggal}
+							              	</td>
+							              	</tr>
+							              	<tr>
+							              	<td style="text-align : left;">
+							              	<i class="fa fa-child"></i> Sembuh </td><td> ${feature.properties.Kasus_Sembuh}
+							              	</td>
+							              	</tr>
+							              	</table>`, 
+							              	{noHide: true});
+							            },
+							            mouseover: function (e) {
+							              layer.bindTooltip(`<h5 style="font-weight : bold;">${feature.properties.PROV}</h5>`, {noHide: true});
+							            }
+								});
+								}
+							}).addTo(map);
+							var legend = L.control({position: 'bottomleft'});
+							legend.onAdd = function (map) {
+								var div = L.DomUtil.create('div', 'infolegend');
+								labels = ['<strong style="font-size : 20px">PASIEN POSITIF</strong>'];
+							    categories = ['0 - 99 Orang','100 - 300 Orang','300 - 1000 Orang','>1000 Orang'];
+							    colors = ['green', '#d19508', 'red', 'black'];
+							    for (var i = 0; i < categories.length; i++) {
+							    		if(i==0){
+							    			nilai = 10;
+							    		}
+							    		else if(i==1){
+							    			nilai = 155;
+							    		}
+							    		else if(i==2){
+							    			nilai = 370;
+							    		}
+							    		else if(i==0){
+							    			nilai = 1200;
+							    		}
+							            div.innerHTML += 
+							            labels.push(
+							                '<div class="circle" style="background:' + colors[i] + '">' + nilai + '</div> ' +
+							            (categories[i] ? categories[i] : '+'));
+
+							        }
+							        labels.push(
+							         			'<hr><small>Sumber data:<br><a href="https://kawalcorona.com" target="_blank">www.kawalcorona.com</a></small>');
+							    div.innerHTML = labels.join('<br>');
+							    return div;
+							};
+							legend.addTo(map);
+					});
+		        })
+
+</script>
+</html>
